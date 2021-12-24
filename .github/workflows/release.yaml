@@ -1,0 +1,47 @@
+name: Release
+on:
+  push:
+    tags:
+      - v*
+jobs:
+  release-stable:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Parse version
+        id: get_version
+        uses: battila7/get-version-action@v2
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image (latest)
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: |
+            ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.version-without-v }}
+            ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}
+            ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.major }}
+            ghcr.io/youscan/azure-storage-queue-exporter:latest
+      - name: Read CHANGELOG
+        id: changelog
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          version: ${{ steps.get_version.outputs.version-without-v }}
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.get_version.outputs.version }}
+          name: ${{ steps.get_version.outputs.version }}
+          allowUpdates: true
+          body: |
+            ${{ steps.changelog.outputs.changes }}
+            
+            Docker image available at `ghcr.io/youscan/azure-storage-queue-exporter`
