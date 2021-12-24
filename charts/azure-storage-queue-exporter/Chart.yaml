@@ -1,5 +1,5 @@
 apiVersion: v2
-name: azure_storage_queue_exporter
+name: azure-storage-queue-exporter
 description: Prometheus Exporter for Azure Storage Queues
 type: application
 version: 1.0.0

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "azure_storage_queue_exporter.fullname" . }}
+  name: {{ include "azure-storage-queue-exporter.fullname" . }}
   labels:
-    {{- include "azure_storage_queue_exporter.labels" . | nindent 4 }}
+    {{- include "azure-storage-queue-exporter.labels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "azure_storage_queue_exporter.selectorLabels" . | nindent 6 }}
+      {{- include "azure-storage-queue-exporter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -15,7 +15,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "azure_storage_queue_exporter.selectorLabels" . | nindent 8 }}
+        {{- include "azure-storage-queue-exporter.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -49,7 +49,7 @@ spec:
             - name: "STORAGE_ACCOUNT_{{ .name }}"
               valueFrom:
                 secretKeyRef:
-                  name: "azure_storage_queue_exporter-azure-storage-account-credentials"
+                  name: "azure-storage-queue-exporter-azure-storage-account-credentials"
                   key: {{ .name }}
             {{- end }}
           resources:
