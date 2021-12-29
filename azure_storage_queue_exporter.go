@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Azure/azure-storage-queue-go/azqueue"
@@ -36,6 +37,9 @@ var (
 		Name: "azure_queue_message_time_in_queue",
 		Help: "How many seconds a message spent in queue.",
 	}, []string{"storage_account", "queue_name"})
+
+	// Readiness probe flag
+	isReady = &atomic.Value{}
 )
 
 type Exporter struct {
@@ -96,6 +100,7 @@ func (e *Exporter) Collect() {
 	wgA.Wait()
 	scrapeTime := timex.Since(timeStart)
 	log.WithFields(log.Fields{"duration": scrapeTime.String()}).Debug("collection cycle end")
+	isReady.Store(true)
 }
 
 type Queue struct {
@@ -147,7 +152,22 @@ func getStorageAccounts() ([]azqueue.SharedKeyCredential, error) {
 	return storageAccounts, nil
 }
 
+func healthz(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func readyz(isReady *atomic.Value) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		if isReady == nil || !isReady.Load().(bool) {
+			http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 func main() {
+	isReady.Store(false)
 	flag.Parse()
 
 	log.SetHandler(text.New(os.Stderr))
@@ -174,9 +194,10 @@ func main() {
 			mMessageTimeInQueue:       mMessageTimeInQueue,
 		}
 		ticker := time.NewTicker(collectionInterval)
+		defer ticker.Stop()
 
 		log.WithField("interval", collectionInterval.String()).Info("starting collection")
-		for range ticker.C {
+		for ; true; <-ticker.C {
 			go exporter.Collect()
 		}
 	}()
@@ -194,11 +215,7 @@ func main() {
 			log.WithError(err).Error("failed writing http response")
 		}
 	})
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("ok"))
-		if err != nil {
-			log.WithError(err).Error("failed writing http response")
-		}
-	})
+	http.HandleFunc("/healthz", healthz)
+	http.HandleFunc("/readyz", readyz(isReady))
 	log.WithError(http.ListenAndServe(*fListenAddress, nil)).Fatal("http server error")
 }
