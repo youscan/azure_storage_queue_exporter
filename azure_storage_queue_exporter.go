@@ -20,58 +20,37 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const namespace = "azure_queue"
-
 var (
 	// CLI flags
-	listenAddress = flag.String("web.listen-address", ":9874", "Address to listen on for telemetry")
-	metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
-	logLevel      = flag.String("log.level", "warn", "Log level {debug|info|warn|error|fatal}")
+	fCollectionInterval = flag.String("collection.interval", "5s", "Metric collection interval")
+	fListenAddress      = flag.String("web.listen-address", ":9874", "Address to listen on for telemetry")
+	fMetricsPath        = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
+	fLogLevel           = flag.String("log.level", "warn", "Log level {debug|info|warn|error|fatal}")
 
 	// Metrics
-	descUp = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "exporter", "up"),
-		"Was the last Azure Storage Queue query successful.",
-		nil, nil,
-	)
-	descScrapeTime = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "exporter", "scrape_time"),
-		"How much time it took to scrape metrics.",
-		nil, nil,
-	)
-	descMessageCount = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "message_count"),
-		"How many messages the queue contains.",
-		[]string{"storage_account", "queue_name"}, nil,
-	)
-	descMessageTimeInQueue = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "message_time_in_queue"),
-		"How much time a message spent in queue.",
-		[]string{"storage_account", "queue_name"}, nil,
-	)
+	mMessageCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "azure_queue_message_count",
+		Help: "How many messages the queue contains.",
+	}, []string{"storage_account", "queue_name"})
+	mMessageTimeInQueue = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "azure_queue_message_time_in_queue",
+		Help: "How many seconds a message spent in queue.",
+	}, []string{"storage_account", "queue_name"})
 )
 
 type Exporter struct {
 	storageAccountCredentials []azqueue.SharedKeyCredential
+	mMessageCount             *prometheus.GaugeVec
+	mMessageTimeInQueue       *prometheus.GaugeVec
 }
 
-func NewExporter(storageAccountCredentials []azqueue.SharedKeyCredential) *Exporter {
-	return &Exporter{
-		storageAccountCredentials: storageAccountCredentials,
-	}
-}
-
-func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-	ch <- descMessageCount
-	ch <- descMessageTimeInQueue
-}
-
-func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+func (e *Exporter) Collect() {
+	log.Debug("collection cycle start")
 	timeStart := timex.Now()
 	var wgA sync.WaitGroup
 	wgA.Add(len(e.storageAccountCredentials))
 	for _, account := range e.storageAccountCredentials {
-		go func(ch chan<- prometheus.Metric, account azqueue.SharedKeyCredential) {
+		go func(account azqueue.SharedKeyCredential) {
 			logCtxA := log.WithFields(log.Fields{"storage_account": account.AccountName()})
 			u, _ := url.Parse(fmt.Sprintf("https://%s.queue.core.windows.net", account.AccountName()))
 			p := azqueue.NewPipeline(&account, azqueue.PipelineOptions{})
@@ -79,9 +58,6 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			ctx := context.TODO()
 			s, err := serviceURL.ListQueuesSegment(ctx, azqueue.Marker{}, azqueue.ListQueuesSegmentOptions{})
 			if err != nil {
-				ch <- prometheus.MustNewConstMetric(
-					descUp, prometheus.GaugeValue, 0,
-				)
 				logCtxA.WithError(err).Error("failed to list queues in storage account")
 				wgA.Done()
 				return
@@ -93,49 +69,33 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 					Name:       queueItem.Name,
 					ServiceURL: serviceURL,
 				}
-				go func(ch chan<- prometheus.Metric, queue Queue) {
+				go func(queue Queue) {
 					logCtxQ := logCtxA.WithFields(log.Fields{"queue": queue.Name})
 					messageCount, err := queue.getMessageCount()
 					if err != nil {
-						ch <- prometheus.MustNewConstMetric(
-							descUp, prometheus.GaugeValue, 0,
-						)
 						logCtxQ.WithError(err).Error("failed to get queue message count")
 						wgQ.Done()
 						return
 					}
-					ch <- prometheus.MustNewConstMetric(
-						descMessageCount, prometheus.GaugeValue, float64(messageCount), account.AccountName(), queue.Name,
-					)
+					e.mMessageCount.WithLabelValues(account.AccountName(), queue.Name).Set(float64(messageCount))
 					messageTimeInQueue, err := queue.getMessageTimeInQueue()
 					if err != nil {
-						ch <- prometheus.MustNewConstMetric(
-							descUp, prometheus.GaugeValue, 0,
-						)
 						logCtxQ.WithError(err).Error("failed to get message time in queue")
 						wgQ.Done()
 						return
 					}
-					ch <- prometheus.MustNewConstMetric(
-						descMessageTimeInQueue, prometheus.GaugeValue, messageTimeInQueue.Seconds(), account.AccountName(), queue.Name,
-					)
+					e.mMessageTimeInQueue.WithLabelValues(account.AccountName(), queue.Name).Set(messageTimeInQueue.Seconds())
 					logCtxQ.WithFields(log.Fields{"message_count": messageCount, "message_time_in_queue": messageTimeInQueue.String()}).Debug("processed a queue")
 					wgQ.Done()
-				}(ch, queue)
+				}(queue)
 			}
 			wgQ.Wait()
 			wgA.Done()
-		}(ch, account)
+		}(account)
 	}
 	wgA.Wait()
-	ch <- prometheus.MustNewConstMetric(
-		descUp, prometheus.GaugeValue, 1,
-	)
 	scrapeTime := timex.Since(timeStart)
-	ch <- prometheus.MustNewConstMetric(
-		descScrapeTime, prometheus.GaugeValue, scrapeTime.Seconds(),
-	)
-	log.WithFields(log.Fields{"duration": scrapeTime.String()}).Debug("collection finished")
+	log.WithFields(log.Fields{"duration": scrapeTime.String()}).Debug("collection cycle end")
 }
 
 type Queue struct {
@@ -191,23 +151,43 @@ func main() {
 	flag.Parse()
 
 	log.SetHandler(text.New(os.Stderr))
-	log.SetLevelFromString(*logLevel)
+	log.SetLevelFromString(*fLogLevel)
+
+	collectionInterval, err := time.ParseDuration(*fCollectionInterval)
+	if err != nil {
+		log.WithError(err).Fatal("failed to parse collection.interval flag")
+	}
 
 	storageAccountCredentials, err := getStorageAccounts()
 	if err != nil {
-		log.WithError(err).Fatal("failed to load Storage Account credentials")
+		log.WithError(err).Fatal("failed to parse Storage Account credentials")
 	}
 
-	exporter := NewExporter(storageAccountCredentials)
-	prometheus.MustRegister(exporter)
+	go func() {
+		prometheus.MustRegister(mMessageCount)
+		prometheus.MustRegister(mMessageTimeInQueue)
+		log.Info("registered Prometheus metrics")
 
-	http.Handle(*metricsPath, promhttp.Handler())
+		exporter := &Exporter{
+			storageAccountCredentials: storageAccountCredentials,
+			mMessageCount:             mMessageCount,
+			mMessageTimeInQueue:       mMessageTimeInQueue,
+		}
+		ticker := time.NewTicker(collectionInterval)
+
+		log.WithField("interval", collectionInterval.String()).Info("starting collection")
+		for range ticker.C {
+			go exporter.Collect()
+		}
+	}()
+
+	http.Handle(*fMetricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write([]byte(`<html>
 								  <head><title>Azure Storage Queue Exporter</title></head>
 								  <body>
 								  <h1>Azure Storage Queue Exporter</h1>
-								  <p><a href='` + *metricsPath + `'>Metrics</a></p>
+								  <p><a href='` + *fMetricsPath + `'>Metrics</a></p>
 								  </body>
 								  </html>`))
 		if err != nil {
@@ -220,5 +200,5 @@ func main() {
 			log.WithError(err).Error("failed writing http response")
 		}
 	})
-	log.WithError(http.ListenAndServe(*listenAddress, nil)).Fatal("http server error")
+	log.WithError(http.ListenAndServe(*fListenAddress, nil)).Fatal("http server error")
 }
