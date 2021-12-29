@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2021-12-29
+
+## Changed
+
+- Metrics collection now starts immediately instead of after `collection.interval`
+
+## Added
+
+- Added liveness (`/healthz`) and readiness (`/readyz`) probe endpoints: app becomes live on HTTP server startup and becomes ready after first successful metric collection cycle
+
 ## [1.1.0] - 2021-12-29
 
 ## Changed
@@ -29,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/youscan/azure_storage_queue_exporter/compare/02d1ad2...v1.0.0
