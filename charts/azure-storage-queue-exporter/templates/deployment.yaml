@@ -32,6 +32,8 @@ spec:
           args:
             - "--log.level"
             - {{ .Values.config.logLevel | quote }}
+            - "--collection.interval"
+            - {{ .Values.config.collectionInterval | quote }}
           ports:
             - name: http
               containerPort: 9874

@@ -5,6 +5,7 @@
 config:
   storageAccountCredentials: []
   logLevel: info
+  collectionInterval: 5s
 
 image:
   repository: ghcr.io/youscan/azure-storage-queue-exporter
