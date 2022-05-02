@@ -48,6 +48,8 @@ spec:
               path: /readyz
               port: http
             initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
           env:
             {{- range .Values.config.storageAccountCredentials }}
             - name: "STORAGE_ACCOUNT_{{ .name }}"
