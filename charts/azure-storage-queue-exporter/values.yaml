@@ -35,6 +35,15 @@ service:
   port: 9874
   annotations: {}
 
+ingress:
+  enabled: false
+  ingressClassName: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths: []
+  tls: []
+
 resources: {}
 
 nodeSelector: {}
