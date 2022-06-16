@@ -42,12 +42,12 @@ spec:
             backend:
               {{- if $.Capabilities.APIVersions.Has "networking.k8s.io/v1" }}
               service:
-               name: {{ include "azure-storage-queue-exporter.fullname" . }}
+               name: {{ include "azure-storage-queue-exporter.fullname" $ }}
                port:
-                 number: {{ .Values.service.port }}
+                 number: {{ $.Values.service.port }}
               {{- else }}
-              serviceName: {{ include "azure-storage-queue-exporter.fullname" . }}
-              servicePort: {{ .Values.service.port }}
+              serviceName: {{ include "azure-storage-queue-exporter.fullname" $ }}
+              servicePort: {{ $.Values.service.port }}
               {{- end }}
           {{- end }}
     {{- end }}
