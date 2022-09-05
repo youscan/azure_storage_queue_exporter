@@ -60,14 +60,21 @@ func (e *Exporter) Collect() {
 			p := azqueue.NewPipeline(&account, azqueue.PipelineOptions{})
 			serviceURL := azqueue.NewServiceURL(*u, p)
 			ctx := context.TODO()
-			s, err := serviceURL.ListQueuesSegment(ctx, azqueue.Marker{}, azqueue.ListQueuesSegmentOptions{})
-			if err != nil {
-				logCtxA.WithError(err).Error("failed to list queues in storage account")
-				wgA.Done()
-				return
+			m := azqueue.Marker{}
+			queueItems := []azqueue.QueueItem{}
+			for m.NotDone() {
+				s, err := serviceURL.ListQueuesSegment(ctx, m, azqueue.ListQueuesSegmentOptions{})
+				if err != nil {
+					logCtxA.WithError(err).Error("failed to list queues in storage account")
+					wgA.Done()
+					return
+				}
+				queueItems = append(queueItems, s.QueueItems...)
+				m = s.NextMarker
 			}
+			logCtxA.Debugf("found %d queues in storage account", len(queueItems))
 			var wgQ sync.WaitGroup
-			for _, queueItem := range s.QueueItems {
+			for _, queueItem := range queueItems {
 				wgQ.Add(1)
 				queue := Queue{
 					Name:       queueItem.Name,
