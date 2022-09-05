@@ -8,6 +8,7 @@ spec:
   selector:
     matchLabels:
       {{- include "azure-storage-queue-exporter.selectorLabels" . | nindent 6 }}
+  replicas: {{ .Values.replicas }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -32,6 +33,8 @@ spec:
           args:
             - "--log.level"
             - {{ .Values.config.logLevel | quote }}
+            - "--log.format"
+            - {{ .Values.config.logFormat | quote }}
             - "--collection.interval"
             - {{ .Values.config.collectionInterval | quote }}
           ports:

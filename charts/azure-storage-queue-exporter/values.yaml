@@ -5,6 +5,7 @@
 config:
   storageAccountCredentials: []
   logLevel: info
+  logFormat: json
   collectionInterval: 5s
 
 image:
@@ -16,6 +17,8 @@ image:
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
+
+replicas: 2
 
 podAnnotations: {}
 
