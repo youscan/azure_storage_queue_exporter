@@ -3,6 +3,25 @@ entries:
   azure-storage-queue-exporter:
   - apiVersion: v2
     appVersion: 1.2.2
+    created: "2022-09-05T09:48:09.765696839Z"
+    description: Prometheus Exporter for Azure Storage Queues
+    digest: 10d26c1f9b0238b7aeab6bbb0c113740ae8e0a74bd8a56bdc98899fbfaeed407
+    home: https://github.com/youscan/azure_storage_queue_exporter
+    keywords:
+    - prometheus-exporter
+    - azure-storage-queue
+    maintainers:
+    - name: Dmitry Kovalenko
+      url: https://github.com/zerodayyy
+    name: azure-storage-queue-exporter
+    sources:
+    - https://github.com/youscan/azure_storage_queue_exporter
+    type: application
+    urls:
+    - https://github.com/youscan/azure_storage_queue_exporter/releases/download/azure-storage-queue-exporter-1.3.3/azure-storage-queue-exporter-1.3.3.tgz
+    version: 1.3.3
+  - apiVersion: v2
+    appVersion: 1.2.2
     created: "2022-09-05T09:37:38.040524737Z"
     description: Prometheus Exporter for Azure Storage Queues
     digest: cf791e8978b50d1cdfc514c76853e5097cdac1ae7d4ef507ba6c05a653c66c28
@@ -116,4 +135,4 @@ entries:
     urls:
     - https://github.com/youscan/azure_storage_queue_exporter/releases/download/azure-storage-queue-exporter-1.0.0/azure-storage-queue-exporter-1.0.0.tgz
     version: 1.0.0
-generated: "2022-09-05T09:37:38.040552237Z"
+generated: "2022-09-05T09:48:09.765744739Z"
