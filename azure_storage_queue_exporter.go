@@ -14,6 +14,7 @@ import (
 
 	"github.com/Azure/azure-storage-queue-go/azqueue"
 	"github.com/apex/log"
+	"github.com/apex/log/handlers/json"
 	"github.com/apex/log/handlers/text"
 	"github.com/cabify/timex"
 	_ "github.com/joho/godotenv/autoload"
@@ -27,6 +28,7 @@ var (
 	fListenAddress      = flag.String("web.listen-address", ":9874", "Address to listen on for telemetry")
 	fMetricsPath        = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
 	fLogLevel           = flag.String("log.level", "warn", "Log level {debug|info|warn|error|fatal}")
+	fLogFormat          = flag.String("log.format", "text", "Log format {text|json}")
 
 	// Metrics
 	mMessageCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -177,7 +179,14 @@ func main() {
 	isReady.Store(false)
 	flag.Parse()
 
-	log.SetHandler(text.New(os.Stderr))
+	switch *fLogFormat {
+	case "json":
+		log.SetHandler(json.New(os.Stderr))
+	case "text":
+		log.SetHandler(text.New(os.Stderr))
+	default:
+		log.Fatal("invalid log format")
+	}
 	log.SetLevelFromString(*fLogLevel)
 
 	collectionInterval, err := time.ParseDuration(*fCollectionInterval)
