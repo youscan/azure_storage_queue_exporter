@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2023-03-01
+
+## Fixed
+
+- Upgraded `golang.org/x/net` to fix multiple vulnerabilities
+
 ## [1.2.2] - 2022-09-05
 
 ## Fixed
@@ -55,7 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.2...HEAD
+[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.3...HEAD
+[1.2.3]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.1.0...v1.2.0
