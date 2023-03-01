@@ -6,7 +6,7 @@ require (
 	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd
 	github.com/apex/log v1.9.0
 	github.com/cabify/timex v1.1.0
-	github.com/joho/godotenv v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.14.0
 )
 
