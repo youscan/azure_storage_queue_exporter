@@ -1,0 +1,50 @@
+{{- if .Values.serviceMonitor.enabled }}
+{{- if .Capabilities.APIVersions.Has "monitoring.coreos.com/v1" }}
+apiVersion: monitoring.coreos.com/v1
+{{- end }}
+kind: ServiceMonitor
+metadata:
+  name: {{ include "azure-storage-queue-exporter.fullname" . }}
+  {{- with .Values.serviceMonitor.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  labels:
+    {{- include "azure-storage-queue-exporter.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.config.collectionInterval }}
+  {{- with .Values.serviceMonitor.jobLabel }}
+  jobLabel: {{ . }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.labelLimit }}
+  labelLimit: {{ . }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.labelNameLengthLimit }}
+  labelNameLengthLimit: {{ . }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.labelValueLengthLimit }}
+  labelValueLengthLimit: {{ . }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.podTargetLabels }}
+  podTargetLabels: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.sampleLimit }}
+  sampleLimit: {{ . }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.targetLabels }}
+  targetLabels: {{ toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.serviceMonitor.targetLimit }}
+  targetLimit: {{ . }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "azure-storage-queue-exporter.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}

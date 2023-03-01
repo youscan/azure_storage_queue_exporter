@@ -6,7 +6,7 @@ config:
   storageAccountCredentials: []
   logLevel: info
   logFormat: json
-  collectionInterval: 5s
+  collectionInterval: 10s
 
 image:
   repository: ghcr.io/youscan/azure-storage-queue-exporter
@@ -18,7 +18,7 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-replicas: 2
+replicas: 1
 
 podAnnotations: {}
 
@@ -47,10 +47,28 @@ ingress:
       paths: []
   tls: []
 
-resources: {}
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 750m
+    memory: 256Mi
 
 nodeSelector: {}
 
 tolerations: []
 
 affinity: {}
+
+serviceMonitor:
+  enabled: false
+  labels:
+  annotations:
+  jobLabel:
+  labelLimit:
+  labelNameLengthLimit:
+  labelValueLengthLimit:
+  podTargetLabels:
+  sampleLimit:
+  targetLabels:
+  targetLimit:

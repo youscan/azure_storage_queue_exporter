@@ -9,7 +9,7 @@ home: https://github.com/youscan/azure_storage_queue_exporter
 sources:
   - https://github.com/youscan/azure_storage_queue_exporter
 maintainers:
-  - name: Dmitry Kovalenko
+  - name: Dmytro Kovalenko
     url: https://github.com/zerodayyy
-version: 1.3.3
-appVersion: "1.2.2"
+version: 1.4.0
+appVersion: "1.2.3"
