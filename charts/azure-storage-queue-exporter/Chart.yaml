@@ -11,5 +11,5 @@ sources:
 maintainers:
   - name: Dmytro Kovalenko
     url: https://github.com/zerodayyy
-version: 1.4.0
+version: 1.4.1
 appVersion: "1.2.3"
