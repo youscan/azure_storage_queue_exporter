@@ -21,6 +21,7 @@ fullnameOverride: ""
 replicas: 1
 
 podAnnotations: {}
+podLabels: {}
 
 podSecurityContext:
   fsGroup: 2000
