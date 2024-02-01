@@ -1,4 +1,4 @@
-FROM golang:1.21.5-alpine AS build
+FROM golang:1.21.6-alpine AS build
 WORKDIR /go/src/github.com/youscan/azure_storage_queue_exporter
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo .
