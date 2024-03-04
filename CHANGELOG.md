@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2024-03-04
+
+## Changed
+
+- Update various dependencies
+
 ## [1.2.3] - 2023-03-01
 
 ## Fixed
@@ -61,7 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.3...HEAD
+[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...HEAD
 [1.2.3]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.0...v1.2.1
