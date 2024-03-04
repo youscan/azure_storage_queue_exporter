@@ -1,6 +1,6 @@
 module github.com/youscan/azure_storage_queue_exporter
 
-go 1.21
+go 1.22
 
 require (
 	github.com/Azure/azure-storage-queue-go v0.0.0-20230531184854-c06a8eff66fe
