@@ -7,14 +7,13 @@ require (
 	github.com/apex/log v1.9.0
 	github.com/cabify/timex v1.1.0
 	github.com/joho/godotenv v1.5.1
-	github.com/prometheus/client_golang v1.21.1
+	github.com/prometheus/client_golang v1.22.0
 )
 
 require (
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/mattn/go-ieproxy v0.0.11 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -24,5 +23,5 @@ require (
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 )
