@@ -27,6 +27,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.version-without-v }}
             ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}

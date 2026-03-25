@@ -1,7 +1,8 @@
-FROM golang:1.26.1-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26.1-alpine AS build
+ARG TARGETARCH
 WORKDIR /go/src/github.com/youscan/azure_storage_queue_exporter
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go install -a -installsuffix cgo .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -o /go/bin/azure_storage_queue_exporter .
 
 FROM gcr.io/distroless/static:nonroot
 COPY --from=build /go/bin/azure_storage_queue_exporter /azure_storage_queue_exporter
