@@ -30,7 +30,7 @@ func setupAzurite(t *testing.T) (*azqueue.ServiceClient, func()) {
 
 	queueServiceURL, err := container.QueueServiceURL(ctx)
 	if err != nil {
-		testcontainers.TerminateContainer(container)
+		_ = testcontainers.TerminateContainer(container)
 		t.Fatalf("failed to get queue service URL: %v", err)
 	}
 
@@ -40,12 +40,12 @@ func setupAzurite(t *testing.T) (*azqueue.ServiceClient, func()) {
 	)
 	client, err := azqueue.NewServiceClientFromConnectionString(connStr, nil)
 	if err != nil {
-		testcontainers.TerminateContainer(container)
+		_ = testcontainers.TerminateContainer(container)
 		t.Fatalf("failed to create service client: %v", err)
 	}
 
 	cleanup := func() {
-		testcontainers.TerminateContainer(container)
+		_ = testcontainers.TerminateContainer(container)
 	}
 	return client, cleanup
 }
