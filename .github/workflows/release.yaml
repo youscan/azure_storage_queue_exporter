@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Parse version
         id: get_version
-        uses: baileyherbert/version-action@v3
+        uses: baileyherbert/version-action@v4
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Azure Container Registry
