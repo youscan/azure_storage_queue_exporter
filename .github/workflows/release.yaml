@@ -14,19 +14,21 @@ jobs:
       - uses: actions/checkout@v6
       - name: Parse version
         id: get_version
-        uses: baileyherbert/version-action@v3
+        uses: baileyherbert/version-action@v4
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to Azure Container Registry
-        uses: azure/docker-login@v2
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          login-server: ghcr.io
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker image (latest)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
+          context: .
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: |
             ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.version-without-v }}
             ghcr.io/youscan/azure-storage-queue-exporter:${{ steps.get_version.outputs.major }}.${{ steps.get_version.outputs.minor }}

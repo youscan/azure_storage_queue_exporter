@@ -5,14 +5,14 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/Azure/azure-storage-queue-go/azqueue"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/json"
 	"github.com/apex/log/handlers/text"
@@ -44,66 +44,67 @@ var (
 	isReady = &atomic.Value{}
 )
 
+type StorageAccount struct {
+	Name   string
+	Client *azqueue.ServiceClient
+}
+
 type Exporter struct {
-	storageAccountCredentials []azqueue.SharedKeyCredential
-	mMessageCount             *prometheus.GaugeVec
-	mMessageTimeInQueue       *prometheus.GaugeVec
+	storageAccounts     []StorageAccount
+	mMessageCount       *prometheus.GaugeVec
+	mMessageTimeInQueue *prometheus.GaugeVec
 }
 
 func (e *Exporter) Collect() {
 	log.Debug("collection cycle start")
 	timeStart := timex.Now()
 	var wgA sync.WaitGroup
-	wgA.Add(len(e.storageAccountCredentials))
-	for _, account := range e.storageAccountCredentials {
-		go func(account azqueue.SharedKeyCredential) {
-			logCtxA := log.WithFields(log.Fields{"storage_account": account.AccountName()})
-			u, _ := url.Parse(fmt.Sprintf("https://%s.queue.core.windows.net", account.AccountName()))
-			p := azqueue.NewPipeline(&account, azqueue.PipelineOptions{})
-			serviceURL := azqueue.NewServiceURL(*u, p)
+	wgA.Add(len(e.storageAccounts))
+	for _, account := range e.storageAccounts {
+		go func(account StorageAccount) {
+			defer wgA.Done()
+			logCtxA := log.WithFields(log.Fields{"storage_account": account.Name})
 			ctx := context.TODO()
-			m := azqueue.Marker{}
-			queueItems := []azqueue.QueueItem{}
-			for m.NotDone() {
-				s, err := serviceURL.ListQueuesSegment(ctx, m, azqueue.ListQueuesSegmentOptions{})
+
+			pager := account.Client.NewListQueuesPager(nil)
+			var queueNames []string
+			for pager.More() {
+				resp, err := pager.NextPage(ctx)
 				if err != nil {
 					logCtxA.WithError(err).Error("failed to list queues in storage account")
-					wgA.Done()
 					return
 				}
-				queueItems = append(queueItems, s.QueueItems...)
-				m = s.NextMarker
-			}
-			logCtxA.Debugf("found %d queues in storage account", len(queueItems))
-			var wgQ sync.WaitGroup
-			for _, queueItem := range queueItems {
-				wgQ.Add(1)
-				queue := Queue{
-					Name:       queueItem.Name,
-					ServiceURL: serviceURL,
+				for _, q := range resp.Queues {
+					queueNames = append(queueNames, *q.Name)
 				}
-				go func(queue Queue) {
-					logCtxQ := logCtxA.WithFields(log.Fields{"queue": queue.Name})
-					messageCount, err := queue.getMessageCount()
+			}
+
+			logCtxA.Debugf("found %d queues in storage account", len(queueNames))
+			var wgQ sync.WaitGroup
+			for _, queueName := range queueNames {
+				wgQ.Add(1)
+				go func(queueName string) {
+					defer wgQ.Done()
+					logCtxQ := logCtxA.WithFields(log.Fields{"queue": queueName})
+					queueClient := account.Client.NewQueueClient(queueName)
+
+					messageCount, err := getMessageCount(ctx, queueClient)
 					if err != nil {
 						logCtxQ.WithError(err).Error("failed to get queue message count")
-						wgQ.Done()
 						return
 					}
-					e.mMessageCount.WithLabelValues(account.AccountName(), queue.Name).Set(float64(messageCount))
-					messageTimeInQueue, err := queue.getMessageTimeInQueue()
+					e.mMessageCount.WithLabelValues(account.Name, queueName).Set(float64(messageCount))
+
+					messageTimeInQueue, err := getMessageTimeInQueue(ctx, queueClient)
 					if err != nil {
 						logCtxQ.WithError(err).Error("failed to get message time in queue")
-						wgQ.Done()
 						return
 					}
-					e.mMessageTimeInQueue.WithLabelValues(account.AccountName(), queue.Name).Set(messageTimeInQueue.Seconds())
+					e.mMessageTimeInQueue.WithLabelValues(account.Name, queueName).Set(messageTimeInQueue.Seconds())
 					logCtxQ.WithFields(log.Fields{"message_count": messageCount, "message_time_in_queue": messageTimeInQueue.String()}).Debug("processed a queue")
-					wgQ.Done()
-				}(queue)
+				}(queueName)
 			}
 			wgQ.Wait()
-			wgA.Done()
 		}(account)
 	}
 	wgA.Wait()
@@ -112,53 +113,76 @@ func (e *Exporter) Collect() {
 	isReady.Store(true)
 }
 
-type Queue struct {
-	Name       string
-	ServiceURL azqueue.ServiceURL
-}
-
-func (q Queue) getMessageCount() (int32, error) {
-	ctx := context.TODO()
-	queueURL := q.ServiceURL.NewQueueURL(q.Name)
-	queueProperties, err := queueURL.GetProperties(ctx)
+func getMessageCount(ctx context.Context, client *azqueue.QueueClient) (int32, error) {
+	props, err := client.GetProperties(ctx, nil)
 	if err != nil {
 		return -1, err
 	}
-	messageCount := queueProperties.ApproximateMessagesCount()
-	return messageCount, nil
+	if props.ApproximateMessagesCount == nil {
+		return 0, nil
+	}
+	return *props.ApproximateMessagesCount, nil
 }
 
-func (q Queue) getMessageTimeInQueue() (time.Duration, error) {
-	ctx := context.TODO()
-	messagesURL := q.ServiceURL.NewQueueURL(q.Name).NewMessagesURL()
-	p, err := messagesURL.Peek(ctx, 1)
+func getMessageTimeInQueue(ctx context.Context, client *azqueue.QueueClient) (time.Duration, error) {
+	resp, err := client.PeekMessage(ctx, nil)
 	if err != nil {
-		return time.Duration(-1), err
+		return -1, err
 	}
-	var messageTimeInQueue time.Duration
-	if p.NumMessages() > 0 {
-		insertionTime := p.Message(0).InsertionTime
-		messageTimeInQueue = timex.Since(insertionTime)
+	if len(resp.Messages) == 0 {
+		return 0, nil
 	}
-	return messageTimeInQueue, nil
+	insertionTime := resp.Messages[0].InsertionTime
+	if insertionTime == nil {
+		return 0, nil
+	}
+	return timex.Since(*insertionTime), nil
 }
 
-func getStorageAccounts() ([]azqueue.SharedKeyCredential, error) {
-	var storageAccounts []azqueue.SharedKeyCredential
+func getStorageAccounts() ([]StorageAccount, error) {
+	var accounts []StorageAccount
+	var defaultCred *azidentity.DefaultAzureCredential
+
 	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "STORAGE_ACCOUNT_") {
-			s := strings.SplitN(v, "=", 2)
-			storageAccountName := strings.TrimPrefix(s[0], "STORAGE_ACCOUNT_")
-			storageAccountKey := s[1]
-			credential, err := azqueue.NewSharedKeyCredential(storageAccountName, storageAccountKey)
+		if !strings.HasPrefix(v, "STORAGE_ACCOUNT_") {
+			continue
+		}
+		s := strings.SplitN(v, "=", 2)
+		accountName := strings.TrimPrefix(s[0], "STORAGE_ACCOUNT_")
+		accountKey := s[1]
+		serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
+		logCtx := log.WithFields(log.Fields{"storage_account": accountName})
+
+		var client *azqueue.ServiceClient
+		var err error
+
+		if accountKey == "" {
+			if defaultCred == nil {
+				defaultCred, err = azidentity.NewDefaultAzureCredential(nil)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create DefaultAzureCredential: %w", err)
+				}
+			}
+			client, err = azqueue.NewServiceClient(serviceURL, defaultCred, nil)
 			if err != nil {
 				return nil, err
 			}
-			log.WithFields(log.Fields{"storage_account": storageAccountName}).Info("found Storage Account credentials")
-			storageAccounts = append(storageAccounts, *credential)
+			logCtx.Info("using DefaultAzureCredential for Storage Account")
+		} else {
+			credential, err := azqueue.NewSharedKeyCredential(accountName, accountKey)
+			if err != nil {
+				return nil, err
+			}
+			client, err = azqueue.NewServiceClientWithSharedKeyCredential(serviceURL, credential, nil)
+			if err != nil {
+				return nil, err
+			}
+			logCtx.Info("using shared key for Storage Account")
 		}
+
+		accounts = append(accounts, StorageAccount{Name: accountName, Client: client})
 	}
-	return storageAccounts, nil
+	return accounts, nil
 }
 
 func healthz(w http.ResponseWriter, _ *http.Request) {
@@ -194,7 +218,7 @@ func main() {
 		log.WithError(err).Fatal("failed to parse collection.interval flag")
 	}
 
-	storageAccountCredentials, err := getStorageAccounts()
+	storageAccounts, err := getStorageAccounts()
 	if err != nil {
 		log.WithError(err).Fatal("failed to parse Storage Account credentials")
 	}
@@ -205,9 +229,9 @@ func main() {
 		log.Info("registered Prometheus metrics")
 
 		exporter := &Exporter{
-			storageAccountCredentials: storageAccountCredentials,
-			mMessageCount:             mMessageCount,
-			mMessageTimeInQueue:       mMessageTimeInQueue,
+			storageAccounts:     storageAccounts,
+			mMessageCount:       mMessageCount,
+			mMessageTimeInQueue: mMessageTimeInQueue,
 		}
 		ticker := time.NewTicker(collectionInterval)
 		defer ticker.Stop()
