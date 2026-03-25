@@ -17,10 +17,14 @@ spec:
       {{- end }}
       labels:
         {{- include "azure-storage-queue-exporter.selectorLabels" . | nindent 8 }}
+        {{- if .Values.config.workloadIdentity.enabled }}
+        azure.workload.identity/use: "true"
+        {{- end }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      serviceAccountName: {{ .Values.serviceAccount.name | default (include "azure-storage-queue-exporter.fullname" .) }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -58,11 +62,16 @@ spec:
             failureThreshold: 10
           env:
             {{- range .Values.config.storageAccountCredentials }}
+            {{- if .key }}
             - name: "STORAGE_ACCOUNT_{{ .name }}"
               valueFrom:
                 secretKeyRef:
                   name: "azure-storage-queue-exporter-azure-storage-account-credentials"
                   key: {{ .name }}
+            {{- else }}
+            - name: "STORAGE_ACCOUNT_{{ .name }}"
+              value: ""
+            {{- end }}
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

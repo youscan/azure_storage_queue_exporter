@@ -4,9 +4,22 @@
 
 config:
   storageAccountCredentials: []
+  # Example with key (existing):
+  # - name: mystorageaccount
+  #   key: <storage-account-key>
+  # Example with identity (omit key to use DefaultAzureCredential):
+  # - name: mystorageaccount
+  workloadIdentity:
+    enabled: false
+    clientId: ""
   logLevel: info
   logFormat: json
   collectionInterval: 10s
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
 
 image:
   repository: ghcr.io/youscan/azure-storage-queue-exporter

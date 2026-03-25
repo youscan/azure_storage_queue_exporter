@@ -200,6 +200,28 @@ func TestGetStorageAccounts(t *testing.T) {
 	}
 }
 
+func TestGetStorageAccountsMixed(t *testing.T) {
+	t.Setenv("STORAGE_ACCOUNT_keyaccount", "dGVzdGtleTE=")
+	t.Setenv("STORAGE_ACCOUNT_identityaccount", "")
+
+	accounts, err := getStorageAccounts()
+	if err != nil {
+		t.Fatalf("getStorageAccounts failed: %v", err)
+	}
+
+	if len(accounts) != 2 {
+		t.Fatalf("expected 2 accounts, got %d", len(accounts))
+	}
+
+	names := map[string]bool{}
+	for _, a := range accounts {
+		names[a.Name] = true
+	}
+	if !names["keyaccount"] || !names["identityaccount"] {
+		t.Errorf("expected keyaccount and identityaccount, got %v", names)
+	}
+}
+
 func TestHealthz(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()

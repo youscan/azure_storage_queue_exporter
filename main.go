@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azqueue"
 	"github.com/apex/log"
 	"github.com/apex/log/handlers/json"
@@ -140,23 +141,46 @@ func getMessageTimeInQueue(ctx context.Context, client *azqueue.QueueClient) (ti
 
 func getStorageAccounts() ([]StorageAccount, error) {
 	var accounts []StorageAccount
+	var defaultCred *azidentity.DefaultAzureCredential
+
 	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "STORAGE_ACCOUNT_") {
-			s := strings.SplitN(v, "=", 2)
-			accountName := strings.TrimPrefix(s[0], "STORAGE_ACCOUNT_")
-			accountKey := s[1]
+		if !strings.HasPrefix(v, "STORAGE_ACCOUNT_") {
+			continue
+		}
+		s := strings.SplitN(v, "=", 2)
+		accountName := strings.TrimPrefix(s[0], "STORAGE_ACCOUNT_")
+		accountKey := s[1]
+		serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
+		logCtx := log.WithFields(log.Fields{"storage_account": accountName})
+
+		var client *azqueue.ServiceClient
+		var err error
+
+		if accountKey == "" {
+			if defaultCred == nil {
+				defaultCred, err = azidentity.NewDefaultAzureCredential(nil)
+				if err != nil {
+					return nil, fmt.Errorf("failed to create DefaultAzureCredential: %w", err)
+				}
+			}
+			client, err = azqueue.NewServiceClient(serviceURL, defaultCred, nil)
+			if err != nil {
+				return nil, err
+			}
+			logCtx.Info("using DefaultAzureCredential for Storage Account")
+		} else {
 			credential, err := azqueue.NewSharedKeyCredential(accountName, accountKey)
 			if err != nil {
 				return nil, err
 			}
-			serviceURL := fmt.Sprintf("https://%s.queue.core.windows.net", accountName)
-			client, err := azqueue.NewServiceClientWithSharedKeyCredential(serviceURL, credential, nil)
+			client, err = azqueue.NewServiceClientWithSharedKeyCredential(serviceURL, credential, nil)
 			if err != nil {
 				return nil, err
 			}
-			log.WithFields(log.Fields{"storage_account": accountName}).Info("found Storage Account credentials")
-			accounts = append(accounts, StorageAccount{Name: accountName, Client: client})
+			logCtx.Info("using shared key for Storage Account")
 		}
+
+		accounts = append(accounts, StorageAccount{Name: accountName, Client: client})
 	}
 	return accounts, nil
 }
