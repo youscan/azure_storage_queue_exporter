@@ -46,6 +46,8 @@ When using identity-based auth, the identity needs the following role:
 |------|-------|---------|
 | `Storage Queue Data Reader` | Storage Account or Subscription | Read queue metadata and peek messages |
 
+This is the only role assignment required. It covers all data plane operations the exporter performs: listing queues, reading queue properties (message count), and peeking messages (message age).
+
 Example role assignment:
 
 ```bash
