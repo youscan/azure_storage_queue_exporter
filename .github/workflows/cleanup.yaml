@@ -1,0 +1,19 @@
+name: Cleanup GHCR Images
+on:
+  schedule:
+    - cron: "0 2 * * 0" # Weekly Sunday 2 AM UTC
+  workflow_dispatch:
+permissions:
+  packages: write
+jobs:
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          package: azure-storage-queue-exporter
+          delete-untagged: true
+          older-than: 4 weeks
+          exclude-tags: "latest,v*"
+          token: ${{ secrets.GITHUB_TOKEN }}
