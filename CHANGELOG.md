@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-03-25
+
+### Added
+
+- Azure AD authentication via DefaultAzureCredential (workload identity, managed identity, Azure CLI)
+- Both shared key and identity-based auth can coexist per storage account
+- Helm chart: workload identity support with ServiceAccount and pod label wiring
+- Integration tests using testcontainers with Azurite
+- Multi-arch Docker images (amd64 + arm64)
+- Comprehensive README with auth, permissions, and Helm usage docs
+
+### Changed
+
+- Migrated from legacy `azure-storage-queue-go` to `azure-sdk-for-go/sdk/storage/azqueue`
+- Switched Docker runtime image from alpine to distroless (24.7MB → 18.2MB)
+
 ## [1.2.5] - 2026-03-25
 
 ### Changed
@@ -75,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.5...HEAD
+[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.5...v1.5.0
 [1.2.5]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.2...v1.2.3
