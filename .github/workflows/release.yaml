@@ -14,9 +14,9 @@ jobs:
       - uses: actions/checkout@v6
       - name: Parse version
         id: get_version
-        uses: baileyherbert/version-action@v3
+        uses: baileyherbert/version-action@v4
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -24,7 +24,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push Docker image (latest)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
