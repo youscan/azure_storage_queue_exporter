@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-03-25
+
+### Changed
+
+- Upgraded Go runtime from 1.22 to 1.26
+- Updated all dependencies to their latest versions
+- Improved CI pipelines with a new build check and cleaner Go version management
+
 ## [1.2.4] - 2024-03-04
 
 ## Changed
@@ -67,8 +75,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
-[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...HEAD
-[1.2.4]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...HEAD
+[unreleased]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.4...v1.2.5
+[1.2.4]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/youscan/azure_storage_queue_exporter/compare/v1.2.0...v1.2.1
