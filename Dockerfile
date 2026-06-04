@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.26.1-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26.3-alpine AS build
 ARG TARGETARCH
 WORKDIR /go/src/github.com/youscan/azure_storage_queue_exporter
 COPY . .
