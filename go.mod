@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/testcontainers/testcontainers-go v0.42.0
-	github.com/testcontainers/testcontainers-go/modules/azure v0.41.0
+	github.com/testcontainers/testcontainers-go/modules/azure v0.42.0
 )
 
 require (
