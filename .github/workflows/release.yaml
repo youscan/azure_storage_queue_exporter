@@ -11,7 +11,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Parse version
         id: get_version
         uses: baileyherbert/version-action@v4
